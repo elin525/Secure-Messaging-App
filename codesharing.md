@@ -1,4 +1,3 @@
-```markdown
 ## 📂 Code Sharing & Git Workflow - DETAILED SETUP
 
 ### Repository Structure
@@ -281,15 +280,3 @@ git reset --soft HEAD~1
 
 ---
 
-## 🎯 Demo Week Git Goals
-
-- [ ] Repository created and all team members have access
-- [ ] `main` and `dev` branches exist
-- [ ] Each person has successfully pushed to their feature branch
-- [ ] At least one PR has been created and merged
-- [ ] Everyone has pulled others' changes at least once
-- [ ] .gitignore files prevent junk from being committed
-- [ ] README.md has setup instructions for both frontend and backend
-
-**Remember**: Git is a tool to help us collaborate. When in doubt, ask the team. Better to ask than to break something!
-```
