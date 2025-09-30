@@ -86,7 +86,7 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
 
 ---
 
-## 🔧 Lawrence's Tasks (Junior Dev Support)
+## 🔧 Lawrence's Tasks (Full Stack)
 
 ### Backend Support
 - [ ] Help with testing backend endpoints
