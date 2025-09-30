@@ -1,4 +1,4 @@
-# Project Manager To-Do List - Secure Messaging App
+# To-Do List - Secure Messaging App
 **Demo Date: This Saturday**
 
 ## 🎯 Demo Week Goals
@@ -103,72 +103,6 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
 - [ ] Ensure frontend and backend can communicate (CORS, ports)
 - [ ] Test end-to-end flow: register → login → send message
 - [ ] Document any issues or blockers
-
----
-
-## 📅 Daily Standup Schedule
-
-### Tuesday (Today)
-- **Alejandro**: Project setup + User entity + Database config
-- **Jane**: React project setup + Landing page
-- **Lawrence**: Help both teams with setup issues
-
-### Wednesday
-- **Alejandro**: Complete authentication endpoints + JWT
-- **Jane**: Registration + Login pages with API integration
-- **Lawrence**: Test auth flow + Create Postman collection
-
-### Thursday
-- **Alejandro**: WebSocket setup + Message entity + Basic messaging
-- **Jane**: Basic chat UI + WebSocket connection
-- **Lawrence**: Integration testing
-
-### Friday
-- **Alejandro**: Message persistence + API documentation + Bug fixes
-- **Jane**: Chat page polish + styling
-- **Lawrence**: End-to-end testing + Demo prep
-
-### Saturday Morning (Before Demo)
-- **All**: Final testing and demo rehearsal
-- **All**: Prepare talking points for demo presentation
-
----
-
-## 🚨 Blockers & Risks
-
-### Potential Issues to Watch
-- [ ] Database connection issues
-- [ ] WebSocket connection problems between frontend/backend
-- [ ] CORS errors
-- [ ] JWT token handling
-- [ ] Time management - scope too large
-
-### Contingency Plan
-If running behind, **cut these features for demo**:
-- Message history retrieval (just show real-time messages)
-- Message delivery status
-- Any styling/polish
-- Error handling UI
-
-**Minimum Viable Demo**: Registration works, Login works, Can send one message between two users
-
----
-
-## 📞 Communication
-
-### Daily Check-ins
-- **Time**: End of day (9 PM?)
-- **Format**: Quick Slack/Discord message
-- **Share**: What you completed, what's blocking you, plan for tomorrow
-
-### Emergency Contact
-- If anyone is blocked, message the group immediately - don't wait until standup
-
-### Code Sharing
-- [ ] Set up GitHub repository
-- [ ] Define branching strategy (main, dev, feature branches)
-- [ ] Set up .gitignore files
-- [ ] Share repository access with all team members
 
 ---
 
