@@ -1,7 +1,6 @@
 ## 📂 Code Sharing & Git Workflow - DETAILED SETUP
 
 ### Repository Structure
-- [ ] **Set up GitHub repository** (Alejandro creates, invites Jane & Lawrence as collaborators)
 - [ ] Create two separate folders in root:
   - `/backend` - Spring Boot project
   - `/frontend` - React project
