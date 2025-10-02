@@ -21,7 +21,7 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
   - [✅] Create UserRepository (JPA)
   - [✅] Implement UserService (registration, login logic)
   - [✅] Implement password hashing (BCrypt)
-  - [ ] Create AuthController with endpoints:
+  - [✅] Create AuthController with endpoints:
     - `POST /api/auth/register` - User registration
     - `POST /api/auth/login` - User login
   - [ ] Implement basic JWT token generation
