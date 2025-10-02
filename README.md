@@ -9,12 +9,12 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
 ## 📋 Backend Priority Tasks (Alejandro)
 
 ### Critical - Must Complete by Thursday
-- [ ] **Project Setup**
-  - [ ] Initialize Spring Boot project with dependencies (Spring Web, Spring Security, WebSocket, PostgreSQL, Redis, JPA)
-  - [ ] Set up PostgreSQL database (local instance)
-  - [ ] Set up Redis (local instance or Docker)
-  - [ ] Configure application.properties for database connections
-  - [ ] Create basic project structure (controllers, services, repositories, models)
+- [✅] **Project Setup**
+  - [✅] Initialize Spring Boot project with dependencies (Spring Web, Spring Security, WebSocket, PostgreSQL, Redis, JPA)
+  - [✅] Set up PostgreSQL database (local instance)
+  - [✅] Set up Redis (local instance or Docker)
+  - [✅] Configure application.properties for database connections
+  - [✅] Create basic project structure (controllers, services, repositories, models)
 
 - [ ] **User Authentication System**
   - [ ] Create User entity/model (id, username, password hash, created_at)
