@@ -28,13 +28,13 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
   - [✅] Test authentication endpoints with Postman/curl
 
 - [ ] **Basic Messaging Backend**
-  - [ ] Create Message entity (id, senderId, receiverId, content, timestamp, delivered)
-  - [ ] Create MessageRepository
-  - [ ] Configure WebSocket with STOMP
+  - [ ] Create Message entity (id, senderIdHash, receiverIdHash, encryptedContent, timestamp, delivered, expiresAt)
+  - [ ] Create MessageRepository with auto-expiration queries
+  - [ ] Create MessageService
+  - [ ] Configure WebSocket with STOMP for real-time delivery
   - [ ] Create WebSocket configuration class
   - [ ] Implement MessageController for WebSocket
-  - [ ] Create endpoint for sending messages: `/app/chat`
-  - [ ] Create subscription endpoint: `/topic/messages/{userId}`
+  - [ ] Create scheduled job for purging expired messages
   - [ ] Test WebSocket connection with a WebSocket client
 
 ### Important - Complete by Friday
