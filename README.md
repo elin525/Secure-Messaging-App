@@ -17,8 +17,8 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
   - [✅] Create basic project structure (controllers, services, repositories, models)
 
 - [ ] **User Authentication System**
-  - [ ] Create User entity/model (id, username, password hash, created_at)
-  - [ ] Create UserRepository (JPA)
+  - [✅] Create User entity/model (id, username, password hash, created_at)
+  - [✅] Create UserRepository (JPA)
   - [ ] Implement UserService (registration, login logic)
   - [ ] Implement password hashing (BCrypt)
   - [ ] Create AuthController with endpoints:
