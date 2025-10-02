@@ -1,20 +1,23 @@
 package com.mynetrunner.backend.service;
 
+import com.mynetrunner.backend.dto.LoginRequest;
+import com.mynetrunner.backend.dto.RegisterRequest;
+import com.mynetrunner.backend.dto.AuthResponse;
+import com.mynetrunner.backend.model.User;
+import com.mynetrunner.backend.repository.UserRepository;
+import com.mynetrunner.backend.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import com.mynetrunner.backend.dto.AuthResponse;
-import com.mynetrunner.backend.dto.LoginRequest;
-import com.mynetrunner.backend.dto.RegisterRequest;
-import com.mynetrunner.backend.model.User;
-import com.mynetrunner.backend.repository.UserRepository;
 
 @Service
 public class UserService {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private JwtUtil jwtUtil;
     
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     
@@ -32,8 +35,10 @@ public class UserService {
         // Save to database
         userRepository.save(user);
         
-        // For now, return without JWT token (we'll add that later)
-        return new AuthResponse(null, user.getUsername(), "User registered successfully");
+        // Generate JWT token
+        String token = jwtUtil.generateToken(user.getUsername());
+        
+        return new AuthResponse(token, user.getUsername(), "User registered successfully");
     }
     
     public AuthResponse login(LoginRequest request) {
@@ -46,7 +51,9 @@ public class UserService {
             throw new RuntimeException("Invalid username or password");
         }
         
-        // For now, return without JWT token (we'll add that later)
-        return new AuthResponse(null, user.getUsername(), "Login successful");
+        // Generate JWT token
+        String token = jwtUtil.generateToken(user.getUsername());
+        
+        return new AuthResponse(token, user.getUsername(), "Login successful");
     }
 }
