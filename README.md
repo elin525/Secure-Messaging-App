@@ -28,9 +28,9 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
   - [✅] Test authentication endpoints with Postman/curl
 
 - [ ] **Basic Messaging Backend**
-  - [ ] Create Message entity (id, senderIdHash, receiverIdHash, encryptedContent, timestamp, delivered, expiresAt)
-  - [ ] Create MessageRepository with auto-expiration queries
-  - [ ] Create MessageService
+  - [✅] Create Message entity (id, senderIdHash, receiverIdHash, encryptedContent, timestamp, delivered, expiresAt)
+  - [✅] Create MessageRepository with auto-expiration queries
+  - [✅] Create MessageService
   - [ ] Configure WebSocket with STOMP for real-time delivery
   - [ ] Create WebSocket configuration class
   - [ ] Implement MessageController for WebSocket
