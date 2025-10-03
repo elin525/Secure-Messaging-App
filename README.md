@@ -27,15 +27,15 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
   - [✅] Implement basic JWT token generation
   - [✅] Test authentication endpoints with Postman/curl
 
-- [ ] **Basic Messaging Backend**
+- [✅] **Basic Messaging Backend**
   - [✅] Create Message entity (id, senderIdHash, receiverIdHash, encryptedContent, timestamp, delivered, expiresAt)
   - [✅] Create MessageRepository with auto-expiration queries
   - [✅] Create MessageService
   - [✅] Configure WebSocket with STOMP for real-time delivery
-  - [ ] Create WebSocket configuration class
-  - [ ] Implement MessageController for WebSocket
-  - [ ] Create scheduled job for purging expired messages
-  - [ ] Test WebSocket connection with a WebSocket client
+  - [✅] Create WebSocket configuration class
+  - [✅] Implement MessageController for WebSocket
+  - [✅] Create scheduled job for purging expired messages
+  - [✅] Test WebSocket connection with a WebSocket client
 
 ### Important - Complete by Friday
 - [ ] **Message Storage**
