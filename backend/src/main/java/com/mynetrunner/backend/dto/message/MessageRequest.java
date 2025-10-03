@@ -7,6 +7,9 @@ import lombok.Data;
 @Data
 public class MessageRequest {
     
+    @NotNull(message = "Sender ID is required")
+    private Long senderId; // For testing - will be extracted from JWT later
+    
     @NotNull(message = "Receiver ID is required")
     private Long receiverId;
     
