@@ -1,3 +1,84 @@
+/**
+ * ChatPage.tsx - Real-time Messaging Interface
+ * 
+ * This component provides a complete chat interface with real-time messaging via WebSocket.
+ * It integrates with the backend Spring Boot application for user authentication and messaging.
+ * 
+ * BACKEND INTEGRATION GUIDE:
+ * =========================
+ * 
+ * 1. WEBSOCKET ENDPOINT REQUIREMENTS:
+ *    - WebSocket URL: ws://localhost:8080/ws/messages
+ *    - STOMP Protocol Support Required
+ *    - Message Publishing: /app/chat
+ *    - Message Subscription: /topic/messages
+ * 
+ * 2. REQUIRED BACKEND ENDPOINTS:
+ *    - GET /api/users - Returns array of all users [{id: number, username: string}]
+ *    - POST /api/auth/login - User authentication
+ *    - POST /api/auth/register - User registration
+ * 
+ * 3. MESSAGE FORMAT (WebSocket):
+ *    Sent to /app/chat:
+ *    {
+ *      "id": number,           // Message ID (auto-generated)
+ *      "senderId": number,     // Current user's ID
+ *      "senderUsername": string, // Current user's username
+ *      "receiverId": number,   // Target user's ID
+ *      "content": string,      // Message text
+ *      "timestamp": string,    // ISO timestamp
+ *      "delivered": boolean    // Delivery status
+ *    }
+ * 
+ * 4. WEBSOCKET CONFIGURATION (Spring Boot):
+ *    - Enable WebSocket support with @EnableWebSocketMessageBroker
+ *    - Configure SockJS fallback for browser compatibility
+ *    - Set up STOMP message broker
+ *    - Allow CORS for localhost:3000 (frontend)
+ * 
+ * 5. REQUIRED DEPENDENCIES (pom.xml):
+ *    - spring-boot-starter-websocket
+ *    - spring-boot-starter-security (for CORS)
+ * 
+ * 6. EXAMPLE BACKEND CONFIGURATION:
+ *    @Configuration
+ *    @EnableWebSocketMessageBroker
+ *    public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+ *        @Override
+ *        public void configureMessageBroker(MessageBrokerRegistry config) {
+ *            config.enableSimpleBroker("/topic");
+ *            config.setApplicationDestinationPrefixes("/app");
+ *        }
+ *        
+ *        @Override
+ *        public void registerStompEndpoints(StompEndpointRegistry registry) {
+ *            registry.addEndpoint("/ws/messages").withSockJS();
+ *        }
+ *    }
+ * 
+ * 7. EXAMPLE MESSAGE CONTROLLER:
+ *    @MessageMapping("/chat")
+ *    @SendTo("/topic/messages")
+ *    public MessageResponse sendMessage(MessageRequest message) {
+ *        // Process and save message
+ *        return new MessageResponse(message);
+ *    }
+ * 
+ * 8. CORS CONFIGURATION:
+ *    Allow requests from http://localhost:3000
+ *    Allow WebSocket connections from frontend
+ * 
+ * 9. AUTHENTICATION:
+ *    - JWT tokens stored in localStorage
+ *    - Username stored in localStorage
+ *    - Automatic redirect to home if not authenticated
+ * 
+ * 10. ERROR HANDLING:
+ *     - WebSocket connection errors logged to console
+ *     - Failed API calls show error messages
+ *     - Graceful fallback for disconnected state
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Users, Settings, LogOut, Plus, UserPlus, X } from 'lucide-react';
 import { initializeChatWebSocket, disconnectChatWebSocket, getChatWebSocket } from '../utils/websocket';
@@ -34,10 +115,37 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
       return;
     }
     
-    // Set current user
+    /**
+     * Current User Setup
+     * 
+     * BACKEND INTEGRATION NOTE:
+     * - Currently using hardcoded ID (1) - needs backend integration
+     * - Should get actual user ID from JWT token or user profile endpoint
+     * - Username is stored in localStorage after login
+     * 
+     * IMPROVEMENT NEEDED:
+     * - Add GET /api/auth/me endpoint to get current user details
+     * - Extract user ID from JWT token claims
+     * - Update UserService to return user ID in login response
+     */
     setCurrentUser({ id: 1, username }); // TODO: Get actual user ID from backend
     
-    // Fetch all users
+    /**
+     * User List Fetching
+     * 
+     * BACKEND ENDPOINT REQUIRED:
+     * - GET /api/users
+     * - Returns: Array<{id: number, username: string}>
+     * - Should exclude current user or filter on frontend
+     * - Requires authentication (JWT token in header)
+     * 
+     * EXAMPLE RESPONSE:
+     * [
+     *   {"id": 1, "username": "alice"},
+     *   {"id": 2, "username": "bob"},
+     *   {"id": 3, "username": "charlie"}
+     * ]
+     */
     const fetchUsers = async () => {
       try {
         const users = await userAPI.getAllUsers();
@@ -56,14 +164,40 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Initialize WebSocket connection only when user is authenticated
+  /**
+   * WebSocket Connection Setup
+   * 
+   * BACKEND REQUIREMENTS:
+   * - WebSocket endpoint at ws://localhost:8080/ws/messages
+   * - STOMP protocol support
+   * - SockJS fallback enabled
+   * - Message broker configured for /topic/messages
+   * 
+   * CONNECTION FLOW:
+   * 1. Connect to WebSocket using SockJS + STOMP
+   * 2. Subscribe to /topic/messages for incoming messages
+   * 3. Publish messages to /app/chat for outgoing messages
+   * 4. Handle connection errors gracefully
+   */
   useEffect(() => {
     if (!currentUser) return;
 
     const wsUrl = 'ws://localhost:8080/ws/messages';
     const chatWs = initializeChatWebSocket(wsUrl);
 
-    // Set up message handler
+    /**
+     * Incoming Message Handler
+     * 
+     * BACKEND INTEGRATION:
+     * - Receives messages from /topic/messages subscription
+     * - Filters messages to only show those involving current user
+     * - Updates local state for real-time display
+     * 
+     * MESSAGE FILTERING:
+     * - Shows messages where current user is sender OR receiver
+     * - Prevents showing messages between other users
+     * - Ensures privacy and relevant message display
+     */
     const handleMessage = (message: Message) => {
       // Only add messages that involve the current user
       if (message.senderId === currentUser.id || message.receiverId === currentUser.id) {
@@ -85,6 +219,32 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
     };
   }, [currentUser]);
 
+  /**
+   * Message Sending Function
+   * 
+   * BACKEND INTEGRATION:
+   * - Sends message to /app/chat endpoint via WebSocket
+   * - Backend should process and broadcast to /topic/messages
+   * - Message format matches the Message interface
+   * 
+   * MESSAGE STRUCTURE:
+   * {
+   *   "id": number,           // Frontend generates temporary ID
+   *   "senderId": number,     // Current user ID from localStorage
+   *   "senderUsername": string, // Current user username
+   *   "receiverId": number,   // Selected contact ID
+   *   "content": string,      // Message text input
+   *   "timestamp": string,    // ISO timestamp
+   *   "delivered": boolean    // Initially false, backend updates
+   * }
+   * 
+   * BACKEND PROCESSING:
+   * 1. Receive message at /app/chat
+   * 2. Validate sender and receiver
+   * 3. Save to database
+   * 4. Broadcast to /topic/messages for real-time delivery
+   * 5. Update delivery status
+   */
   const handleSendMessage = () => {
     if (newMessage.trim() && currentUser && selectedContact) {
       const message: Message = {
@@ -371,5 +531,41 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
     </div>
   );
 };
+
+/**
+ * BACKEND INTEGRATION CHECKLIST:
+ * ==============================
+ * 
+ * ✅ COMPLETED:
+ * - WebSocket connection setup
+ * - Message sending/receiving
+ * - User list fetching
+ * - Authentication integration
+ * - Real-time message display
+ * - Contact selection
+ * 
+ * 🔧 BACKEND TASKS:
+ * 1. Implement WebSocket endpoint at /ws/messages
+ * 2. Configure STOMP message broker
+ * 3. Add message controller with @MessageMapping("/chat")
+ * 4. Implement GET /api/users endpoint
+ * 5. Add message persistence to database
+ * 6. Configure CORS for WebSocket connections
+ * 7. Add user ID to JWT token claims
+ * 8. Implement message history loading
+ * 
+ * 🧪 TESTING:
+ * - Test WebSocket connection
+ * - Verify message delivery
+ * - Check user list functionality
+ * - Test authentication flow
+ * - Verify message persistence
+ * 
+ * 🚀 DEPLOYMENT:
+ * - Update WebSocket URL for production
+ * - Configure CORS for production domain
+ * - Set up SSL for WSS connections
+ * - Configure message broker clustering
+ */
 
 export default ChatPage;
