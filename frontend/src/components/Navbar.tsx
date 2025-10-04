@@ -18,7 +18,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
           <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white rounded-lg flex items-center justify-center">
   <MessageSquare className="w-8 h-8 sm:w-9 sm:h-9 text-indigo-600" strokeWidth={2.5} fill="white" />
 </div>
-          <span className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">ChatApp</span>
+          <span className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">NetRunner Chat</span>
         </div>
         
         {/* Auth buttons */}
