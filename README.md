@@ -60,14 +60,14 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
 **Note: These are suggestions - frontend has creative freedom**
 
 ### Suggested Pages for Demo
-- [ ] **Landing/Home Page**
+- [✅] **Landing/Home Page**
   - Basic welcome page with navigation to login/register
 
-- [ ] **Registration Page**
+- [✅] **Registration Page**
   - Form with username and password fields
   - Call `POST /api/auth/register` endpoint
 
-- [ ] **Login Page**
+- [✅] **Login Page**
   - Form with username and password fields
   - Call `POST /api/auth/login` endpoint
   - Store JWT token in localStorage
