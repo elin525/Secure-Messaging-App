@@ -75,4 +75,20 @@ export const authAPI = {
   },
 };
 
+// User API calls
+export const userAPI = {
+  // Get all users
+  getAllUsers: async (): Promise<Array<{id: number; username: string}>> => {
+    try {
+      const response = await api.get('/api/users');
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch users');
+      }
+      throw new Error('An unexpected error occurred');
+    }
+  },
+};
+
 export default api;
