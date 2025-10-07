@@ -16,26 +16,26 @@ Goal: Have a functional demo with user registration, login, and basic messaging 
   - [✅] Configure application.properties for database connections
   - [✅] Create basic project structure (controllers, services, repositories, models)
 
-- [ ] **User Authentication System**
-  - [ ] Create User entity/model (id, username, password hash, created_at)
-  - [ ] Create UserRepository (JPA)
-  - [ ] Implement UserService (registration, login logic)
-  - [ ] Implement password hashing (BCrypt)
-  - [ ] Create AuthController with endpoints:
+- [✅] **User Authentication System**
+  - [✅] Create User entity/model (id, username, password hash, created_at)
+  - [✅] Create UserRepository (JPA)
+  - [✅] Implement UserService (registration, login logic)
+  - [✅] Implement password hashing (BCrypt)
+  - [✅] Create AuthController with endpoints:
     - `POST /api/auth/register` - User registration
     - `POST /api/auth/login` - User login
-  - [ ] Implement basic JWT token generation
-  - [ ] Test authentication endpoints with Postman/curl
+  - [✅] Implement basic JWT token generation
+  - [✅] Test authentication endpoints with Postman/curl
 
-- [ ] **Basic Messaging Backend**
-  - [ ] Create Message entity (id, senderId, receiverId, content, timestamp, delivered)
-  - [ ] Create MessageRepository
-  - [ ] Configure WebSocket with STOMP
-  - [ ] Create WebSocket configuration class
-  - [ ] Implement MessageController for WebSocket
-  - [ ] Create endpoint for sending messages: `/app/chat`
-  - [ ] Create subscription endpoint: `/topic/messages/{userId}`
-  - [ ] Test WebSocket connection with a WebSocket client
+- [✅] **Basic Messaging Backend**
+  - [✅] Create Message entity (id, senderIdHash, receiverIdHash, encryptedContent, timestamp, delivered, expiresAt)
+  - [✅] Create MessageRepository with auto-expiration queries
+  - [✅] Create MessageService
+  - [✅] Configure WebSocket with STOMP for real-time delivery
+  - [✅] Create WebSocket configuration class
+  - [✅] Implement MessageController for WebSocket
+  - [✅] Create scheduled job for purging expired messages
+  - [✅] Test WebSocket connection with a WebSocket client
 
 ### Important - Complete by Friday
 - [ ] **Message Storage**
