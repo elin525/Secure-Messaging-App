@@ -1,7 +1,5 @@
 package com.mynetrunner.backend.controller;
 
-import java.security.Principal;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -10,45 +8,69 @@ import org.springframework.stereotype.Controller;
 
 import com.mynetrunner.backend.dto.message.MessageRequest;
 import com.mynetrunner.backend.dto.message.MessageResponse;
+import com.mynetrunner.backend.exception.MessageDeliveryException;
+import com.mynetrunner.backend.exception.UserNotFoundException;
+import com.mynetrunner.backend.model.Message;
+import com.mynetrunner.backend.model.User;
+import com.mynetrunner.backend.repository.UserRepository;
 import com.mynetrunner.backend.service.MessageService;
+
+import jakarta.validation.Valid;
 
 @Controller
 public class WebSocketMessageController {
     
     @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+    
+    @Autowired
     private MessageService messageService;
     
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private UserRepository userRepository;
     
-    /**
-     * Handle messages sent to /app/chat
-     * Client sends message here, server routes to recipient
-     */
     @MessageMapping("/chat")
-    public void sendMessage(@Payload MessageRequest messageRequest, Principal principal) {
+    public void sendMessage(@Valid @Payload MessageRequest request) {
         try {
-            // For now, we'll need to pass senderId manually
-            // In Phase 2, we'll extract this from JWT token in Principal
-            // Temporarily using receiverId as a placeholder - you'll fix this with proper auth
-            
-            // Save message temporarily
-            MessageResponse response = messageService.sendMessage(
-                messageRequest.getReceiverId(), // TEMP: Replace with actual senderId from JWT
-                messageRequest
+            // Validate sender exists
+            User sender = userRepository.findById(request.getSenderId())
+                .orElseThrow(() -> new UserNotFoundException("Sender not found"));
+
+            // Validate receiver exists
+            userRepository.findById(request.getReceiverId())
+                .orElseThrow(() -> new UserNotFoundException("Receiver not found"));
+
+            // Create and save message temporarily
+            Message message = messageService.sendMessage(
+                request.getSenderId(),
+                request.getReceiverId(),
+                request.getContent()
             );
-            
-            // Send message to specific user's queue
+
+            // Create response with sender username
+            MessageResponse response = new MessageResponse(
+                message.getId(),
+                message.getSenderId(),
+                sender.getUsername(),
+                message.getReceiverId(),
+                message.getContent(),
+                message.getTimestamp(),
+                message.getDelivered()
+            );
+
+            // Send to receiver's topic
             messagingTemplate.convertAndSend(
-                "/topic/messages/" + messageRequest.getReceiverId(),
+                "/topic/messages/" + request.getReceiverId(),
                 response
             );
-            
-            // Mark as delivered and delete from server immediately
-            messageService.markAsDelivered(response.getId());
-            
+
+            // Mark as delivered and delete from server
+            messageService.markAsDelivered(message.getId());
+
+        } catch (UserNotFoundException e) {
+            throw e;
         } catch (Exception e) {
-            System.err.println("Error sending message: " + e.getMessage());
+            throw new MessageDeliveryException("Failed to deliver message: " + e.getMessage());
         }
     }
 }

@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.mynetrunner.backend.dto.message.MessageRequest;
 import com.mynetrunner.backend.dto.message.MessageResponse;
 import com.mynetrunner.backend.model.Message;
 import com.mynetrunner.backend.model.User;
@@ -27,25 +26,25 @@ public class MessageService {
     /**
      * Send a message (temporarily store until delivered)
      */
-    public MessageResponse sendMessage(Long senderId, MessageRequest request) {
+    public Message sendMessage(Long senderId, Long receiverId, String content) {
         // Verify sender exists
         User sender = userRepository.findById(senderId)
             .orElseThrow(() -> new RuntimeException("Sender not found"));
-        
+
         // Verify receiver exists
-        User receiver = userRepository.findById(request.getReceiverId())
+        User receiver = userRepository.findById(receiverId)
             .orElseThrow(() -> new RuntimeException("Receiver not found"));
-        
+
         // Create and save message
         Message message = new Message();
         message.setSenderId(senderId);
-        message.setReceiverId(request.getReceiverId());
-        message.setContent(request.getContent());
+        message.setReceiverId(receiverId);
+        message.setContent(content);
         message.setDelivered(false);
-        
+
         Message savedMessage = messageRepository.save(message);
-        
-        return convertToResponse(savedMessage, sender.getUsername());
+
+        return savedMessage;
     }
     
     /**
