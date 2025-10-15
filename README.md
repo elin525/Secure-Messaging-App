@@ -57,13 +57,13 @@ Important - Complete by Friday
    * [✅] Share base URL and WebSocket endpoint URLs
 
 * **Input Validation & Error Handling**
-   * [ ] Add username validation (3-50 characters, alphanumeric)
-   * [ ] Add password requirements (minimum 6 characters)
-   * [ ] Implement proper error messages for validation failures
-   * [ ] Add HTTP status codes for all responses
+   * [✅] Add username validation (3-50 characters, alphanumeric)
+   * [✅] Add password requirements (minimum 6 characters)
+   * [✅] Implement proper error messages for validation failures
+   * [✅] Add HTTP status codes for all responses
       * 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error
-   * [ ] Create custom exception handlers (@ControllerAdvice)
-   * [ ] Add try-catch blocks for better error handling
+   * [✅] Create custom exception handlers (@ControllerAdvice)
+   * [✅] Add try-catch blocks for better error handling
 
 * **CORS Configuration**
    * [ ] Configure CORS in SecurityConfig
