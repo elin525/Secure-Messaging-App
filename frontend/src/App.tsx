@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import HomePage from './components/HomePage';
 import SignInPage from './components/SignInPage';
 import SignUpPage from './components/SignUpPage';
+import ChatPage from './components/ChatPage';
 import { getToken } from './utils/api';
 import type { PageType } from './types';
 
@@ -16,9 +17,8 @@ const App: React.FC = () => {
   useEffect(() => {
     const token = getToken();
     if (token) {
-      // User is logged in, could redirect to chat page
-      console.log('User is already logged in');
-  
+      // User is logged in, redirect to chat page
+      setCurrentPage('chat');
     }
   }, []);
 
@@ -31,6 +31,8 @@ const App: React.FC = () => {
         return <SignInPage onNavigate={setCurrentPage} />;
       case 'signup':
         return <SignUpPage onNavigate={setCurrentPage} />;
+      case 'chat':
+        return <ChatPage onNavigate={setCurrentPage} />;
       default:
         return <HomePage onNavigate={setCurrentPage} />;
     }

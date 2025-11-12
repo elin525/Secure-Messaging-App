@@ -42,7 +42,7 @@ const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
       setToken(response.token);
       setUsername(response.username);
       console.log('Login successful:', response);
-      alert('Login successful! Chat page coming soon...');
+      onNavigate('chat');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

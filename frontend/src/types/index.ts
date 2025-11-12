@@ -15,8 +15,27 @@ export interface AuthResponse {
 }
 
 export interface User {
-  id: string;
+  id: number;
   username: string;
+}
+
+// Message types for chat functionality
+export interface Message {
+  id: number;
+  senderId: number;
+  senderUsername: string;
+  receiverId: number;
+  content: string;
+  timestamp: string;
+  delivered: boolean;
+}
+
+export interface Contact {
+  id: number;
+  username: string;
+  lastMessage?: string;
+  time?: string;
+  unread?: number;
 }
 
 // API error response
