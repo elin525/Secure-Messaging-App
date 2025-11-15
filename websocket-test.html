@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyNetRunner WebSocket Test Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .disconnect-btn {
+            background-color: #f44336;
+        }
+        .disconnect-btn:hover {
+            background-color: #da190b;
+        }
+        #status {
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #fafafa;
+            border-radius: 5px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #4CAF50;
+            border-radius: 3px;
+        }
+        .message-header {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .message-content {
+            font-size: 14px;
+            color: #333;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .input-group input {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 MyNetRunner WebSocket Test Client</h1>
+        
+        <!-- Connection Status -->
+        <div class="section">
+            <h3>Connection Status</h3>
+            <div id="status" class="disconnected">DISCONNECTED</div>
+        </div>
+
+        <!-- Connection Controls -->
+        <div class="section">
+            <h3>1. Connect as User</h3>
+            <div class="input-group">
+                <label>Your User ID:</label>
+                <input type="number" id="userId" placeholder="Enter your user ID (e.g., 1)" value="1">
+                <button id="connectBtn" onclick="connect()">Connect</button>
+                <button id="disconnectBtn" class="disconnect-btn" onclick="disconnect()" disabled>Disconnect</button>
+            </div>
+            <p style="font-size: 12px; color: #666; margin: 10px 0 0 0;">
+                💡 Tip: Open this file in multiple browser tabs with different User IDs to test messaging between users!
+            </p>
+        </div>
+
+        <!-- Send Message -->
+        <div class="section">
+            <h3>2. Send Message</h3>
+            <div class="input-group">
+                <label>To User ID:</label>
+                <input type="number" id="receiverId" placeholder="Receiver ID" value="2">
+            </div>
+            <div class="input-group" style="margin-top: 10px;">
+                <label>Message:</label>
+                <input type="text" id="messageContent" placeholder="Type your message here...">
+                <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+            </div>
+        </div>
+
+        <!-- Received Messages -->
+        <div class="section">
+            <h3>3. Received Messages</h3>
+            <div id="messages">
+                <p style="color: #999; text-align: center;">No messages yet. Connect and start chatting!</p>
+            </div>
+            <button onclick="clearMessages()" style="margin-top: 10px;">Clear Messages</button>
+        </div>
+    </div>
+
+    <!-- Include SockJS and STOMP libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <script>
+        let stompClient = null;
+        let currentUserId = null;
+
+        function connect() {
+            const userId = document.getElementById('userId').value;
+            
+            if (!userId) {
+                alert('Please enter a User ID');
+                return;
+            }
+
+            currentUserId = userId;
+            
+            // Create WebSocket connection
+            const socket = new SockJS('http://localhost:8080/ws');
+            stompClient = Stomp.over(socket);
+
+            // Connect to WebSocket
+            stompClient.connect({}, function(frame) {
+                console.log('Connected: ' + frame);
+                updateStatus(true);
+                
+                // Subscribe to messages for this user
+                stompClient.subscribe('/topic/messages/' + currentUserId, function(message) {
+                    const messageData = JSON.parse(message.body);
+                    displayMessage(messageData);
+                });
+            }, function(error) {
+                console.log('Connection error: ' + error);
+                updateStatus(false);
+                alert('Failed to connect. Make sure your backend is running on http://localhost:8080');
+            });
+        }
+
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            updateStatus(false);
+            console.log('Disconnected');
+        }
+
+        function sendMessage() {
+            const receiverId = document.getElementById('receiverId').value;
+            const content = document.getElementById('messageContent').value;
+
+            if (!receiverId || !content) {
+                alert('Please fill in both Receiver ID and Message');
+                return;
+            }
+
+            const message = {
+                senderId: parseInt(currentUserId),
+                receiverId: parseInt(receiverId),
+                content: content
+            };
+
+            stompClient.send('/app/chat', {}, JSON.stringify(message));
+            
+            // Clear input
+            document.getElementById('messageContent').value = '';
+            
+            // Show sent message in UI
+            addSystemMessage(`Sent to User ${receiverId}: ${content}`);
+        }
+
+        function displayMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            
+            // Remove "no messages" text if present
+            if (messagesDiv.children.length === 1 && messagesDiv.children[0].tagName === 'P') {
+                messagesDiv.innerHTML = '';
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    From: User ${message.senderId} (${message.senderUsername}) | 
+                    ${new Date(message.timestamp).toLocaleTimeString()}
+                </div>
+                <div class="message-content">${message.content}</div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            const messagesDiv = document.getElementById('messages');
+            
+            if (messagesDiv.children.length === 1 && messagesDiv.children[0].tagName === 'P') {
+                messagesDiv.innerHTML = '';
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.style.padding = '8px';
+            messageDiv.style.color = '#666';
+            messageDiv.style.fontStyle = 'italic';
+            messageDiv.style.fontSize = '13px';
+            messageDiv.textContent = text;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            const statusDiv = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const sendBtn = document.getElementById('sendBtn');
+
+            if (connected) {
+                statusDiv.textContent = 'CONNECTED (User ' + currentUserId + ')';
+                statusDiv.className = 'connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                sendBtn.disabled = false;
+            } else {
+                statusDiv.textContent = 'DISCONNECTED';
+                statusDiv.className = 'disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                sendBtn.disabled = true;
+                currentUserId = null;
+            }
+        }
+
+        function clearMessages() {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = '<p style="color: #999; text-align: center;">No messages yet. Connect and start chatting!</p>';
+        }
+
+        // Allow sending message with Enter key
+        document.getElementById('messageContent').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !document.getElementById('sendBtn').disabled) {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
