@@ -39,17 +39,40 @@ export const setUsername = (username: string): void => {
   localStorage.setItem('username', username);
 };
 
+export const getUserId = (): number | null => {
+  const userId = localStorage.getItem('userId');
+  return userId ? parseInt(userId) : null;
+};
+
+export const setUserId = (userId: number | undefined): void => {
+  if (userId !== undefined && userId !== null) {
+    localStorage.setItem('userId', userId.toString());
+  }
+};
+
 // Auth API calls
 export const authAPI = {
   // Register new user
   register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
     try {
       const { confirmPassword, ...registerData } = credentials;
-      const response = await api.post<AuthResponse>('/api/auth/register', registerData);
-      return response.data;
+      const response = await api.post('/api/auth/register', registerData);
+      
+      console.log('Register response:', response.data);
+      
+      // Backend returns: { message, username, userId }
+      const data = response.data;
+      return {
+        token: '', // No token returned on register
+        username: data.username,
+        userId: data.userId || 0,
+        message: data.message,
+      };
     } catch (error) {
       if (error instanceof AxiosError) {
-        throw new Error(error.response?.data?.message || 'Registration failed');
+        console.error('Register error:', error.response?.data);
+        // Backend error format: { error: "message" }
+        throw new Error(error.response?.data?.error || 'Registration failed');
       }
       throw new Error('An unexpected error occurred');
     }
@@ -58,11 +81,28 @@ export const authAPI = {
   // Login user
   login: async (credentials: AuthCredentials): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>('/api/auth/login', credentials);
-      return response.data;
+      const response = await api.post('/api/auth/login', credentials);
+      
+      console.log('Login response:', response.data);
+      
+      // Backend returns: { message, token, username, userId }
+      const data = response.data;
+      
+      if (!data.userId) {
+        console.error('Backend did not return userId! Full response:', data);
+      }
+      
+      return {
+        token: data.token,
+        username: data.username,
+        userId: data.userId || 0,
+        message: data.message,
+      };
     } catch (error) {
       if (error instanceof AxiosError) {
-        throw new Error(error.response?.data?.message || 'Login failed');
+        console.error('Login error:', error.response?.data);
+        // Backend error format: { error: "message" }
+        throw new Error(error.response?.data?.error || 'Login failed');
       }
       throw new Error('An unexpected error occurred');
     }
@@ -72,19 +112,20 @@ export const authAPI = {
   logout: (): void => {
     removeToken();
     localStorage.removeItem('username');
+    localStorage.removeItem('userId');
   },
 };
 
 // User API calls
 export const userAPI = {
-  // Get all users
+  // Get all users - NOTE: This endpoint doesn't exist in your backend yet!
   getAllUsers: async (): Promise<Array<{id: number; username: string}>> => {
     try {
-      const response = await api.get('/api/users');
-      return response.data;
+      console.warn('GET /api/users endpoint not implemented in backend yet');
+      return [];
     } catch (error) {
       if (error instanceof AxiosError) {
-        throw new Error(error.response?.data?.message || 'Failed to fetch users');
+        throw new Error(error.response?.data?.error || 'Failed to fetch users');
       }
       throw new Error('An unexpected error occurred');
     }

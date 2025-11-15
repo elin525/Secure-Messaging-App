@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare } from 'lucide-react';
-import { authAPI, setToken, setUsername } from '../utils/api';
+import { authAPI, setToken, setUsername, setUserId } from '../utils/api';
 import type { PageType } from '../types';
 
 interface SignInPageProps {
@@ -29,8 +29,14 @@ const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
   };
 
   const handleSubmit = async () => {
+    // Validation
     if (!formData.username || !formData.password) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -39,8 +45,12 @@ const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
 
     try {
       const response = await authAPI.login(formData);
+      
+      // Store authentication data
       setToken(response.token);
       setUsername(response.username);
+      setUserId(response.userId);
+      
       console.log('Login successful:', response);
       onNavigate('chat');
     } catch (err) {
@@ -113,6 +123,7 @@ const SignInPage: React.FC<SignInPageProps> = ({ onNavigate }) => {
               className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border-2 border-gray-200 focus:border-indigo-600 focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
               disabled={isLoading}
             />
+            <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
           </div>
           
           {/* Submit button */}

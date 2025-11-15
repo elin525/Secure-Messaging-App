@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare } from 'lucide-react';
-import { authAPI, setToken, setUsername } from '../utils/api';
+import { authAPI } from '../utils/api';
 import type { PageType } from '../types';
 
 interface SignUpPageProps {
@@ -30,8 +30,19 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
   };
 
   const handleSubmit = async () => {
+    // Validation
     if (!formData.username || !formData.password || !formData.confirmPassword) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (formData.username.length < 3 || formData.username.length > 20) {
+      setError('Username must be between 3 and 20 characters');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long');
       return;
     }
 
@@ -40,20 +51,16 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-
     setIsLoading(true);
     setError('');
 
     try {
       const response = await authAPI.register(formData);
-      setToken(response.token);
-      setUsername(response.username);
       console.log('Registration successful:', response);
-      alert('Registration successful! Chat page coming soon...');
+      
+      // Show success message and redirect to login
+      alert(`Registration successful! Welcome ${response.username}! Please sign in to continue.`);
+      onNavigate('signin');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
@@ -106,6 +113,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
               className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border-2 border-gray-200 focus:border-indigo-600 focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
               disabled={isLoading}
             />
+            <p className="text-xs text-gray-500 mt-1">3-20 characters, alphanumeric and underscores only</p>
           </div>
           
           {/* Password field */}
@@ -124,6 +132,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
               className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border-2 border-gray-200 focus:border-indigo-600 focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
               disabled={isLoading}
             />
+            <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
           </div>
           
           {/* Confirm password field */}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, Settings, LogOut, Plus, UserPlus, X } from 'lucide-react';
+import { Send, LogOut, MessageSquare } from 'lucide-react';
 import { initializeChatWebSocket, disconnectChatWebSocket, getChatWebSocket } from '../utils/websocket';
-import { getUsername, removeToken, getToken, userAPI } from '../utils/api';
-import type { PageType, Message, Contact, User } from '../types';
+import { getUsername, getToken, getUserId, authAPI } from '../utils/api';
+import type { PageType, Message } from '../types';
 
 interface ChatPageProps {
   onNavigate: (page: PageType) => void;
@@ -12,9 +12,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [currentUser, setCurrentUser] = useState<{ id: number; username: string } | null>(null);
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [showUserSelector, setShowUserSelector] = useState(false);
+  const [recipientUsername, setRecipientUsername] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -22,26 +21,15 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
   useEffect(() => {
     const token = getToken();
     const username = getUsername();
+    const userId = getUserId();
     
-    if (!token || !username) {
+    if (!token || !username || !userId) {
       // User is not logged in, redirect to home
       onNavigate('home');
       return;
     }
     
-    setCurrentUser({ id: 1, username }); // TODO: Get actual user ID from backend
-    
-    // Fetch all users
-    const fetchUsers = async () => {
-      try {
-        const users = await userAPI.getAllUsers();
-        setAllUsers(users);
-      } catch (error) {
-        console.error('Failed to fetch users:', error);
-      }
-    };
-    
-    fetchUsers();
+    setCurrentUser({ id: userId, username });
     setIsLoading(false);
   }, [onNavigate]);
 
@@ -54,54 +42,70 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
   useEffect(() => {
     if (!currentUser) return;
 
-    const wsUrl = 'ws://localhost:8080/ws/messages';
+    const wsUrl = 'http://localhost:8080/ws';
     const chatWs = initializeChatWebSocket(wsUrl);
 
     // Set up message handler
     const handleMessage = (message: Message) => {
-      // Only add messages that involve the current user
-      if (message.senderId === currentUser.id || message.receiverId === currentUser.id) {
-        setMessages(prevMessages => [...prevMessages, message]);
-      }
+      console.log('Message received in chat:', message);
+      setMessages(prevMessages => [...prevMessages, message]);
     };
 
     // Set up error handler
     const handleError = (error: string) => {
       console.error('WebSocket error:', error);
-      // Could show a toast notification here
+      setIsConnected(false);
     };
 
+    // Connect to WebSocket
     chatWs.connect(handleMessage, handleError);
+    
+    // Give it a moment to connect
+    setTimeout(() => {
+      const ws = getChatWebSocket();
+      if (ws && ws.isConnected()) {
+        setIsConnected(true);
+      }
+    }, 1000);
 
     // Cleanup on unmount
     return () => {
       disconnectChatWebSocket();
+      setIsConnected(false);
     };
   }, [currentUser]);
 
   const handleSendMessage = () => {
-    if (newMessage.trim() && currentUser && selectedContact) {
-      const message: Message = {
-        id: messages.length + 1,
-        senderId: currentUser.id,
-        senderUsername: currentUser.username,
-        receiverId: selectedContact.id,
-        content: newMessage,
-        timestamp: new Date().toISOString(),
-        delivered: false,
-      };
+    const trimmedMessage = newMessage.trim();
+    const trimmedRecipient = recipientUsername.trim();
+
+    if (!trimmedMessage || !trimmedRecipient) {
+      alert('Please enter both a recipient username and a message');
+      return;
+    }
+
+    if (trimmedMessage.length > 1000) {
+      alert('Message too long (max 1000 characters)');
+      return;
+    }
+
+    if (!currentUser) {
+      alert('Not logged in');
+      return;
+    }
+
+    const chatWs = getChatWebSocket();
+    if (chatWs && chatWs.isConnected()) {
+      // Send message via WebSocket with sender username
+      chatWs.sendChatMessage(currentUser.username, trimmedRecipient, trimmedMessage);
       
-      // Add to local messages immediately for better UX
-      setMessages(prev => [...prev, message]);
+      // Clear input
       setNewMessage('');
       
-      // Send via WebSocket
-      const chatWs = getChatWebSocket();
-      if (chatWs && chatWs.isConnected()) {
-        chatWs.sendChatMessage(message);
-      } else {
-        console.warn('WebSocket not connected, message not sent');
-      }
+      console.log('Message sent to:', trimmedRecipient);
+    } else {
+      alert('WebSocket not connected. Please wait or refresh the page.');
+      console.warn('WebSocket not connected, message not sent');
     }
   };
 
@@ -118,27 +122,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
 
   const handleLogout = () => {
     // Clear token and redirect to home
-    removeToken();
-    localStorage.removeItem('username');
+    authAPI.logout();
     disconnectChatWebSocket();
     onNavigate('home');
-  };
-
-  const handleSelectContact = (user: User) => {
-    const contact: Contact = {
-      id: user.id,
-      username: user.username,
-    };
-    setSelectedContact(contact);
-    setShowUserSelector(false);
-  };
-
-  const handleStartNewChat = () => {
-    setShowUserSelector(true);
-  };
-
-  const handleCloseUserSelector = () => {
-    setShowUserSelector(false);
   };
 
   // Show loading state while checking authentication
@@ -165,18 +151,20 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white rounded-lg flex items-center justify-center">
-              <Users className="w-8 h-8 sm:w-9 sm:h-9 text-indigo-600" strokeWidth={2.5} />
+              <MessageSquare className="w-8 h-8 sm:w-9 sm:h-9 text-indigo-600" strokeWidth={2.5} />
             </div>
-            <span className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">NetRunner Chat</span>
+            <div>
+              <span className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">MyNetRunner Chat</span>
+              <p className="text-xs text-gray-500">
+                {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+              </p>
+            </div>
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
-            <button 
-              className="text-gray-900 font-semibold px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 hover:text-gray-600 transition-colors text-sm sm:text-base flex items-center gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </button>
+            <span className="text-sm text-gray-600 hidden sm:block">
+              {currentUser.username}
+            </span>
             <button 
               onClick={handleLogout}
               className="bg-red-600 text-white font-semibold px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base shadow-md flex items-center gap-2"
@@ -189,179 +177,103 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* Main chat interface */}
-      <div className="flex-1 flex max-w-7xl mx-auto w-full">
-        {/* Contacts sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Conversations</h2>
-              <button
-                onClick={handleStartNewChat}
-                className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors"
-                title="Start new chat"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto">
-            {messages.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-sm">No conversations yet</p>
-                <p className="text-xs mt-1">Start a conversation to see messages here</p>
-              </div>
-            ) : (
-              <div className="p-4 text-center text-gray-500">
-                <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">Messages will appear here</p>
-                <p className="text-xs mt-1">Select a contact to start chatting</p>
-              </div>
-            )}
-          </div>
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full p-4">
+        {/* Recipient input */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Send message to:
+          </label>
+          <input
+            type="text"
+            value={recipientUsername}
+            onChange={(e) => setRecipientUsername(e.target.value)}
+            placeholder="Enter recipient's username"
+            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-600 focus:outline-none"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Enter the exact username of the person you want to message
+          </p>
         </div>
 
-        {/* Chat area */}
-        <div className="flex-1 flex flex-col">
-          {/* Chat header */}
-          <div className="bg-white border-b border-gray-200 p-4">
-            {selectedContact ? (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <span className="text-indigo-600 font-semibold text-sm">
-                    {selectedContact.username.split(' ').map(n => n[0]).join('')}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{selectedContact.username}</h3>
-                  <p className="text-green-500 text-xs">Online</p>
-                </div>
+        {/* Messages area */}
+        <div className="flex-1 bg-white rounded-lg shadow-md p-4 mb-4 overflow-y-auto">
+          {messages.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center h-full">
+              <div className="text-center text-gray-500">
+                <Send className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium">No messages yet</p>
+                <p className="text-sm mt-1">Enter a recipient username and start chatting!</p>
               </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Users className="w-5 h-5 text-gray-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Welcome, {currentUser.username}!</h3>
-                  <p className="text-gray-500 text-xs">Select a conversation to start chatting</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Messages area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <Send className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-lg font-medium">No messages yet</p>
-                  <p className="text-sm mt-1">Your conversation history will appear here</p>
-                </div>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.senderId === currentUser.id ? 'justify-end' : 'justify-start'}`}
-                >
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message, index) => {
+                const isSentByMe = message.senderUsername === currentUser.username;
+                return (
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                      message.senderId === currentUser.id
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-gray-900 shadow-sm border border-gray-200'
-                    }`}
+                    key={index}
+                    className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'}`}
                   >
-                    <p className="text-sm">{message.content}</p>
-                    <p
-                      className={`text-xs mt-1 ${
-                        message.senderId === currentUser.id ? 'text-indigo-100' : 'text-gray-500'
+                    <div
+                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                        isSentByMe
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-white text-gray-900 shadow-sm border border-gray-200'
                       }`}
                     >
-                      {formatTime(message.timestamp)}
-                    </p>
+                      <p className="text-xs font-semibold mb-1">
+                        {isSentByMe ? 'You' : message.senderUsername}
+                      </p>
+                      <p className="text-sm">{message.content}</p>
+                      <p
+                        className={`text-xs mt-1 ${
+                          isSentByMe ? 'text-indigo-100' : 'text-gray-500'
+                        }`}
+                      >
+                        {formatTime(message.timestamp)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Message input */}
-          <div className="bg-white border-t border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 relative">
-                <textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={selectedContact ? "Type a message..." : "Select a contact to start messaging..."}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
-                  rows={1}
-                  style={{ minHeight: '48px', maxHeight: '120px' }}
-                  disabled={!selectedContact}
-                />
-              </div>
-              <button
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || !selectedContact}
-                className="bg-indigo-600 text-white p-3 rounded-2xl hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                <Send className="w-5 h-5" />
-              </button>
+                );
+              })}
+              <div ref={messagesEndRef} />
             </div>
+          )}
+        </div>
+
+        {/* Message input */}
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 relative">
+              <textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={
+                  recipientUsername
+                    ? "Type a message..."
+                    : "Enter a recipient username first..."
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                rows={1}
+                style={{ minHeight: '48px', maxHeight: '120px' }}
+                disabled={!isConnected || !recipientUsername}
+                maxLength={1000}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {newMessage.length}/1000 characters
+              </p>
+            </div>
+            <button
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim() || !recipientUsername || !isConnected}
+              className="bg-indigo-600 text-white p-3 rounded-2xl hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              <Send className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
-
-      {/* User Selector Modal */}
-      {showUserSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-80 max-h-96">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Start New Chat</h3>
-              <button
-                onClick={handleCloseUserSelector}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {allUsers
-                .filter(user => user.id !== currentUser?.id) // Don't show current user
-                .map(user => (
-                  <button
-                    key={user.id}
-                    onClick={() => handleSelectContact(user)}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                      <span className="text-indigo-600 font-semibold text-sm">
-                        {user.username.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium text-gray-900">{user.username}</p>
-                      <p className="text-sm text-gray-500">Click to start chatting</p>
-                    </div>
-                  </button>
-                ))}
-            </div>
-            
-            {allUsers.filter(user => user.id !== currentUser?.id).length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <UserPlus className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-sm">No other users found</p>
-                <p className="text-xs mt-1">Register more users to start chatting</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

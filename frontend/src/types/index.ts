@@ -11,6 +11,7 @@ export interface RegisterCredentials extends AuthCredentials {
 export interface AuthResponse {
   token: string;
   username: string;
+  userId: number;  // Added userId field
   message?: string;
 }
 

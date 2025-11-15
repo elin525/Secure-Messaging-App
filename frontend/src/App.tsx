@@ -5,6 +5,7 @@ import SignUpPage from './components/SignUpPage';
 import ChatPage from './components/ChatPage';
 import { getToken } from './utils/api';
 import type { PageType } from './types';
+import { getUserId } from './utils/api';
 
 /**
  * Main App component

@@ -11,5 +11,8 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  define: {
+    global: 'globalThis',  // ← ADD THIS LINE - Fixes SockJS issue
   }
 })
