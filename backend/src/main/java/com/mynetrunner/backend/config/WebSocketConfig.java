@@ -1,5 +1,4 @@
 package com.mynetrunner.backend.config;
-
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -15,7 +14,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Enable a simple in-memory message broker
         // Messages sent to destinations starting with "/topic" will be routed to subscribers
         config.enableSimpleBroker("/topic", "/queue");
-        
+
         // Messages sent to destinations starting with "/app" will be routed to @MessageMapping methods
         config.setApplicationDestinationPrefixes("/app");
     }
@@ -25,7 +24,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Register STOMP endpoint that clients will connect to
         // Endpoint: ws://localhost:8080/ws
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*") // For development - restrict in production
+                .setAllowedOrigins("http://localhost:3000") // React frontend origin
                 .withSockJS(); // Fallback option for browsers that don't support WebSocket
     }
 }
