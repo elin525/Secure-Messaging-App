@@ -1,5 +1,7 @@
 package com.mynetrunner.backend.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -44,15 +46,19 @@ public class UserService {
     // Find user
     User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new InvalidCredentialsException("Invalid username or password"));
-    
+
     // Verify password
     if (!passwordEncoder.matches(password, user.getPasswordHash())) {
         throw new InvalidCredentialsException("Invalid username or password");
     }
-    
+
     // Generate JWT token
     String token = jwtUtil.generateToken(username);
-    
+
     return new AuthResponse(token, username, "Login successful");
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 }
