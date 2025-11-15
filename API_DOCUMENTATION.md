@@ -35,8 +35,8 @@ Content-Type: application/json
 ```
 
 **Validation Rules:**
-- Username: Required, 3-50 characters
-- Password: Required, minimum 6 characters
+- Username: Required, 3-50 characters, alphanumeric and underscores only
+- Password: Required, minimum 8 characters
 
 **Success Response (201 Created):**
 ```json
@@ -335,14 +335,14 @@ curl http://localhost:8080/api/health
 ```bash
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"test123"}'
+  -d '{"username":"testuser","password":"testpass123"}'
 ```
 
 3. **Login:**
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"test123"}'
+  -d '{"username":"testuser","password":"testpass123"}'
 ```
 
 4. **WebSocket Testing:**
